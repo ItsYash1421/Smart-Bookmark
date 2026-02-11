@@ -24,13 +24,14 @@ export default function AddBookmark() {
       return
     }
 
-    const { error } = await supabase.from('bookmarks').insert([
+    const { data, error } = await supabase.from('bookmarks').insert([
       { url, title, user_id: user.id },
-    ])
+    ]).select().single()
 
     if (error) {
       console.error('Error adding bookmark:', error)
     } else {
+      window.dispatchEvent(new CustomEvent('bookmark-added', { detail: data }))
       setUrl('')
       setTitle('')
     }

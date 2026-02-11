@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Trash2, ExternalLink, Globe, Calendar, Search } from 'lucide-react'
 import { Bookmark } from '@/types'
@@ -18,12 +18,8 @@ export default function BookmarkList({ initialBookmarks }: { initialBookmarks: B
   const [search, setSearch] = useState('')
   const supabase = createClient()
 
-  useEffect(() => {
-    fetchBookmarks(1)
-  }, [])
-
-  const fetchBookmarks = async (page: number) => {
-    setLoading(true)
+  const fetchBookmarks = useCallback(async (page: number, showLoading = true) => {
+    if (showLoading) setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -49,8 +45,30 @@ export default function BookmarkList({ initialBookmarks }: { initialBookmarks: B
     } else {
       setBookmarks(data || [])
     }
-    setLoading(false)
-  }
+    if (showLoading) setLoading(false)
+  }, [supabase])
+
+  useEffect(() => {
+    fetchBookmarks(1)
+  }, [fetchBookmarks])
+
+  // Listen for local "bookmark-added" event for instant update
+  useEffect(() => {
+    const handleBookmarkAdded = (event: any) => {
+      const newBookmark = event.detail
+      setBookmarks(prev => {
+        // Prevent duplicate if realtime already added it
+        if (prev.find(b => b.id === newBookmark.id)) return prev
+        const updated = [newBookmark, ...prev].slice(0, ITEMS_PER_PAGE)
+        return updated
+      })
+      setTotalCount(prev => prev + 1)
+      setCurrentPage(1)
+    }
+
+    window.addEventListener('bookmark-added', handleBookmarkAdded)
+    return () => window.removeEventListener('bookmark-added', handleBookmarkAdded)
+  }, [])
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -58,21 +76,49 @@ export default function BookmarkList({ initialBookmarks }: { initialBookmarks: B
   }
 
   useEffect(() => {
-    const channel = supabase
-      .channel('realtime-bookmarks')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bookmarks' },
-        (payload) => {
-          fetchBookmarks(currentPage)
-        }
-      )
-      .subscribe()
+    let channel: any
+
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      channel = supabase
+        .channel('realtime-bookmarks')
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'bookmarks',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newBookmark = payload.new as Bookmark
+              setBookmarks(prev => {
+                if (prev.find(b => b.id === newBookmark.id)) return prev
+                return [newBookmark, ...prev].slice(0, ITEMS_PER_PAGE)
+              })
+              setTotalCount(prev => prev + 1)
+              setCurrentPage(1)
+            } else if (payload.eventType === 'DELETE') {
+              fetchBookmarks(currentPage, false)
+            } else {
+              fetchBookmarks(currentPage, false)
+            }
+          }
+        )
+        .subscribe()
+    }
+
+    setupRealtime()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
-  }, [supabase, currentPage])
+  }, [supabase, currentPage, fetchBookmarks])
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('bookmarks').delete().eq('id', id)
