@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Bookmark App
 
-## Getting Started
+A simple, real-time bookmark manager built with Next.js, Supabase, and Tailwind CSS.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Google OAuth**: Secure login using Google (via Supabase Auth).
+- **Private Bookmarks**: Users can only see and manage their own bookmarks.
+- **Real-time Updates**: Bookmark list updates instantly across all open tabs when a bookmark is added or deleted.
+- **Responsive Design**: Beautiful UI built with Tailwind CSS.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: [Next.js (App Router)](https://nextjs.org/)
+- **Database & Auth**: [Supabase](https://supabase.com/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup Instructions
 
-## Learn More
+1.  **Clone the repository**
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Supabase Setup**:
+    - Create a new project on [Supabase](https://supabase.com/).
+    - Run the SQL in `schema.sql` in the Supabase SQL Editor.
+    - Enable Google Auth in the Supabase Dashboard (Authentication > Providers > Google).
+    - Configure the Google OAuth redirect URI in Supabase to: `https://your-project-id.supabase.co/auth/v1/callback`.
+    - In your Google Cloud Console, set the Authorized redirect URIs to: `https://your-project-id.supabase.co/auth/v1/callback`.
+4.  **Environment Variables**:
+    - Create a `.env.local` file and add your Supabase credentials:
+      ```env
+      NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+      NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+      ```
+5.  **Run the app**:
+    ```bash
+    npm run dev
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+## Problems Faced & Solutions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 1. Real-time Synchronization
+**Problem**: Ensuring that bookmarks update in real-time across multiple tabs without manual refresh.
+**Solution**: Leveraged Supabase's Realtime subscriptions. I set up a `useEffect` hook in the `BookmarkList` component that listens for `INSERT` and `DELETE` events on the `bookmarks` table and updates the local state accordingly.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Middleware Session Management
+**Problem**: Next.js App Router requires careful handling of cookies and sessions in middleware to prevent unauthorized access.
+**Solution**: Used the `@supabase/ssr` package to implement a robust session refresh logic in `middleware.ts`. This ensures that the user's session is always valid when navigating between pages.
 
-## Deploy on Vercel
+### 3. Google OAuth Redirects
+**Problem**: Handling the OAuth redirect correctly on production (Vercel) vs local environment.
+**Solution**: Implemented a dynamic redirect logic in the `/auth/callback` route that detects the environment and uses the correct host for redirection after successful authentication.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4. RLS (Row Level Security)
+**Problem**: Ensuring User A cannot see User B's bookmarks.
+**Solution**: Enabled RLS on the `bookmarks` table and created policies that restrict access based on the `auth.uid()`. This ensures security at the database level, not just the application level.
