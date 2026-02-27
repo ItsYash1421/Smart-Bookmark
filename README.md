@@ -56,4 +56,4 @@ A simple, real-time bookmark manager built with Next.js, Supabase, and Tailwind 
 
 ### 4. RLS (Row Level Security)
 **Problem**: Ensuring User A cannot see User B's bookmarks.
-**Solution**: Enabled RLS on the `bookmarks` table and created policies that restrict access based on the `auth.uid()`. This ensures security at the database level, not just the application level.
+**Solution**: Enabled RLS on the `bookmarks` table and created policies that restrict access based on the `auth.uid()`. This ensures security at the database level, not just the application level
