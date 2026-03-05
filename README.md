@@ -52,7 +52,7 @@ A simple, real-time bookmark manager built with Next.js, Supabase, and Tailwind 
 
 ### 3. Google OAuth Redirects
 **Problem**: Handling the OAuth redirect correctly on production (Vercel) vs local environment.
-**Solution**: Implemented a dynamic redirect logic in the `/auth/callback` route that detects the environment and uses the correct host for redirection after successful authentication.
+**Solution**: Implemented a dynamic redirect logic in the `/auth/callback` route that detects the environment and uses the correct host for redirection after successful authentication
 
 ### 4. RLS (Row Level Security)
 **Problem**: Ensuring User A cannot see User B's bookmarks.
