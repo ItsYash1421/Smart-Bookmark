@@ -48,7 +48,7 @@ A simple, real-time bookmark manager built with Next.js, Supabase, and Tailwind 
 
 ### 2. Middleware Session Management
 **Problem**: Next.js App Router requires careful handling of cookies and sessions in middleware to prevent unauthorized access.
-**Solution**: Used the `@supabase/ssr` package to implement a robust session refresh logic in `middleware.ts`. This ensures that the user's session is always valid when navigating between pages.
+**Solution**: Used the `@supabase/ssr` package to implement a robust session refresh logic in `middleware.ts`. This ensures that the user's session is always valid when navigating between pages
 
 ### 3. Google OAuth Redirects
 **Problem**: Handling the OAuth redirect correctly on production (Vercel) vs local environment.
